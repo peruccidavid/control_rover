@@ -1,9 +1,18 @@
 # Bloque de simulación - Comentar o eliminar cuando se ejecute en el Pi
-# import sys
-# sys.path.append('.')
-# import mock_rpi_gpio
-import RPi.GPIO as GPIO
+import sys
+sys.path.append('.')
+import mock_rpi_gpio
+
+# A partir de aquí, el código es el mismo para la simulación y el hardware real.
+try:
+    import RPi.GPIO as GPIO
+except ImportError:
+    import sys
+    sys.path.append('.')
+    import mock_rpi_gpio as GPIO
+
 import time
+# ... el resto de tu código de control de motores ...
 
 # Configuración de pines (usando el modo BCM)
 # Asigna los pines GPIO según la configuración del manual de conexiones
