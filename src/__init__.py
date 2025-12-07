@@ -1,0 +1,3 @@
+# filepath: /home/comprotic/Documents/control_rover/src/__init__.py
+# ...existing code...
+# Paquete vacío para permitir imports desde src/

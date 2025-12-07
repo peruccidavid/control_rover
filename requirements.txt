@@ -1,0 +1,3 @@
+# filepath: /home/comprotic/Documents/control_rover/requirements.txt
+# ...existing code...
+# Ninguna dependencia externa necesaria para la versión de prueba.
