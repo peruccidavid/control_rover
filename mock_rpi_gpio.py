@@ -10,6 +10,9 @@ PWM = object()
 def setmode(mode):
     print("GPIO: Modo de numeración configurado.")
 
+def setwarnings(flag):
+    print(f"GPIO: Advertencias configuradas a {flag}.")
+
 def setup(pins, mode):
     if isinstance(pins, int):
         pins = [pins]
@@ -26,14 +29,17 @@ def cleanup():
 
 def PWM(pin, frequency):
     print(f"GPIO: PWM iniciado en el Pin {pin} con frecuencia {frequency} Hz.")
-    return _PWM_Mock()
+    return _PWM_Mock(pin)
 
 class _PWM_Mock:
+    def __init__(self, pin):
+        self._pin = pin
+
     def start(self, duty_cycle):
-        print(f"PWM: Iniciar con ciclo de trabajo de {duty_cycle}%.")
+        print(f"PWM (Pin {self._pin}): Iniciar con ciclo de trabajo de {duty_cycle}%.")
 
     def ChangeDutyCycle(self, duty_cycle):
-        print(f"PWM: Ciclo de trabajo cambiado a {duty_cycle}%.")
+        print(f"PWM (Pin {self._pin}): Ciclo de trabajo cambiado a {duty_cycle:.1f}%.")
 
     def stop(self):
-        print("PWM: Detenido.")
+        print(f"PWM (Pin {self._pin}): Detenido.")

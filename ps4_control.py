@@ -51,6 +51,7 @@ def main():
             turn = ax_x
             left, right = _mix(throttle, turn)
             set_side_speeds(left, right)
+            print(f"\rIzquierda: {left: 4d}, Derecha: {right: 4d} \n")
 
             # Salir con botón OPTIONS (index 9 en muchos drivers)
             if js.get_numbuttons() > 9 and js.get_button(9):
@@ -63,6 +64,7 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        print("\nDeteniendo motores y limpiando GPIO...")
         stop_all_wheels()
         set_mosfet_state("OFF")
         cleanup_gpio()
