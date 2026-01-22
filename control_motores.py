@@ -21,7 +21,14 @@ MOSFET_1_PIN = 17
 MOSFET_2_PIN = 27
 MOSFET_3_PIN = 22
 
-PWM_FREQ = 50
+# Pines de Dirección para ZS-X11H (NUEVO)
+# Conecta el pin DIR de los drivers izquierdos al GPIO 5 y derechos al GPIO 6
+DIR_LEFT_PIN = 5
+DIR_RIGHT_PIN = 6
+# Pin de Freno (BRAKE/BK) común para todos los drivers ZS-X11H
+BRAKE_PIN = 21
+
+PWM_FREQ = 1000  # Aumentado a 1kHz para drivers BLDC/Industriales
 
 # Variables que se inicializan en init_gpio()
 GPIO_INITIALIZED = False
@@ -49,6 +56,10 @@ def init_gpio():
             g.setup(pin, g.OUT)
         for pin in (MOSFET_1_PIN, MOSFET_2_PIN, MOSFET_3_PIN):
             g.setup(pin, g.OUT)
+        for pin in (DIR_LEFT_PIN, DIR_RIGHT_PIN):
+            g.setup(pin, g.OUT)
+        g.setup(BRAKE_PIN, g.OUT)
+        g.output(BRAKE_PIN, g.HIGH)  # Inicializar sin freno (Run)
 
     try:
         _setup_pins(GPIO)
@@ -97,15 +108,26 @@ def set_mosfet_state(state):
         GPIO.output(pin, level)
 
 def _map_speed_to_pwm(value):
-    """Mapea -100..100 a 0..100 para ChangeDutyCycle (ajustar si necesario)."""
+    """Mapea -100..100 a 0..100 absoluto para ZS-X11H."""
     if value < -100: value = -100
     if value > 100: value = 100
-    return (value + 100) / 2.0
+    return abs(value)
 
 def set_side_speeds(left, right):
     """Establece velocidad para lado izquierdo y derecho (-100..100)."""
     if not GPIO_INITIALIZED:
         init_gpio()
+    
+    # Desactivar freno (HIGH = Run) siempre que se intente mover o estar en reposo (coast)
+    GPIO.output(BRAKE_PIN, GPIO.HIGH)
+
+    # Control de Dirección (DIR Pin)
+    # Solo cambiar dirección si la velocidad no es 0 para evitar conmutaciones en reposo
+    if left != 0:
+        GPIO.output(DIR_LEFT_PIN, GPIO.HIGH if left > 0 else GPIO.LOW)
+    if right != 0:
+        GPIO.output(DIR_RIGHT_PIN, GPIO.HIGH if right > 0 else GPIO.LOW)
+
     pwm_left = _map_speed_to_pwm(left)
     pwm_right = _map_speed_to_pwm(right)
     for pwm in (pwm_esc_1, pwm_esc_3, pwm_esc_5):  # ruedas izquierdas
@@ -124,7 +146,17 @@ def set_all_wheels_speed(value):
     set_side_speeds(value, value)
 
 def stop_all_wheels():
-    set_all_wheels_speed(0)
+    """Detiene los motores y activa el freno (Pin LOW)."""
+    if not GPIO_INITIALIZED:
+        return
+    # Poner PWM a 0 manualmente para evitar llamar a set_side_speeds (que soltaría el freno)
+    for pwm in (pwm_esc_1, pwm_esc_2, pwm_esc_3, pwm_esc_4, pwm_esc_5, pwm_esc_6):
+        try:
+            pwm.ChangeDutyCycle(0)
+        except Exception:
+            pass
+    # Activar freno (LOW = Brake en ZS-X11H)
+    GPIO.output(BRAKE_PIN, GPIO.LOW)
 
 def cleanup_gpio():
     """Detiene PWM y limpia GPIO; seguro si no inicializado."""
